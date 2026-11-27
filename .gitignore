@@ -1,0 +1,18 @@
+# Environment files (JANGAN PERNAH commit .env!)
+.env
+backend/.env
+*.env.local
+
+# Binaries & build artifacts
+backend/bin/
+backend/dist/
+backend/main
+*.exe
+*.out
+*.log
+tmp/
+
+# OS & Editor
+.DS_Store
+.vscode/
+.idea/

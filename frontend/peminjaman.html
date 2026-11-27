@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Peminjaman — SimInventaris</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+  <div id="navbar"></div>
+  <main class="mx-auto max-w-6xl px-4 py-8 space-y-6">
+    <h1 class="text-2xl font-bold">Manajemen Peminjaman</h1>
+    <div id="alert-box" class="hidden"></div>
+
+    <div id="detail-box" class="hidden rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm">
+      <div class="flex justify-between items-start gap-4">
+        <div id="detail-content"></div>
+        <button onclick="document.getElementById('detail-box').classList.add('hidden')" class="text-xs underline">Tutup</button>
+      </div>
+    </div>
+
+    <section class="rounded-xl border border-slate-200 bg-white p-6">
+      <h2 id="form-title" class="text-lg font-semibold mb-4">Ajukan Peminjaman</h2>
+      <form id="peminjaman-form" class="grid gap-4 md:grid-cols-3">
+        <input type="hidden" id="peminjaman-id" />
+        <div>
+          <label class="block text-sm font-medium mb-1">Barang</label>
+          <select id="barang_id" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Jumlah</label>
+          <input type="number" id="jumlah" min="1" required value="1" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Tanggal Pinjam</label>
+          <input type="date" id="tanggal_pinjam" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Tanggal Kembali (Opsional)</label>
+          <input type="date" id="tanggal_kembali" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+        <div id="status-group" class="hidden">
+          <label class="block text-sm font-medium mb-1">Status (Admin)</label>
+          <select id="status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+            <option value="dipinjam">Dipinjam</option>
+            <option value="dikembalikan">Dikembalikan</option>
+            <option value="ditolak">Ditolak</option>
+          </select>
+        </div>
+        <div class="md:col-span-3">
+          <label class="block text-sm font-medium mb-1">Catatan</label>
+          <input type="text" id="catatan" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Untuk praktikum jaringan..." />
+        </div>
+        <div class="md:col-span-3 flex gap-2">
+          <button type="submit" id="btn-save" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Simpan</button>
+          <button type="button" id="btn-reset" class="rounded-lg border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100">Reset</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-slate-50 text-slate-600">
+          <tr>
+            <th class="px-4 py-3">ID</th>
+            <th class="px-4 py-3">Peminjam</th>
+            <th class="px-4 py-3">Barang</th>
+            <th class="px-4 py-3">Jumlah</th>
+            <th class="px-4 py-3">Tanggal</th>
+            <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3 text-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="peminjaman-tbody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/navbar.js"></script>
+  <script src="js/peminjaman.js"></script>
+</body>
+</html>
