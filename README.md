@@ -38,10 +38,10 @@ Aplikasi web full-stack untuk manajemen inventaris dan peminjaman barang laborat
 cd backend
 cp .env.example .env
 # Edit .env sesuai konfigurasi MySQL lokal & JWT_SECRET Anda
-go mod tidy
 go run ./cmd/api
 ```
 Server akan berjalan di `http://localhost:3000` (cek kesehatan API di `GET http://localhost:3000/api/status`).
+Versi Go yang digunakan harus memenuhi versi pada `backend/go.mod`.
 
 ### 2. Frontend
 Jalankan folder `frontend/` menggunakan static server (misal VS Code **Live Server** di port `5500`, atau `python3 -m http.server 5500` di dalam folder `frontend/`):
@@ -57,15 +57,17 @@ Buka `http://localhost:5500/login.html`.
 
 Panduan lengkap langkah demi langkah tersedia di [`DEPLOYMENT_AAPANEL.md`](DEPLOYMENT_AAPANEL.md).
 
-1. **Buat Database MySQL di aaPanel:** Menu **Databases** -> **Add DB** (`siminventaris_db`, Access: `127.0.0.1`).
-2. **Build Binary Backend & Upload:**
+1. Arahkan DNS domain frontend dan subdomain API ke VPS. Buka port 80/443 untuk situs dan pastikan MySQL hanya menerima koneksi lokal.
+2. **Buat Database MySQL di aaPanel:** Menu **Databases** -> **Add DB** (`siminventaris_db`, Access: `127.0.0.1`).
+3. **Build Binary Backend & Upload:**
    ```bash
    cd backend
    sh build-linux.sh
    ```
-   Upload `backend/dist/siminventaris-api` ke `/www/wwwroot/api-inventaris/`, set permission `755`, buat `.env` (isi DB, `JWT_SECRET` acak panjang, dan `CORS_ORIGINS=https://inventaris.domainkamu.com`), lalu jalankan via **Supervisor Manager** / **Go Project** pada port `3000`.
-3. **Domain + Reverse Proxy + SSL Backend:** Di **Website -> Add site** (`api-inventaris.domainkamu.com`, Pure static) -> **Reverse Proxy** ke `http://127.0.0.1:3000` -> aktifkan **SSL Let's Encrypt (Force HTTPS)**. Cek `https://api-inventaris.domainkamu.com/api/status`.
-4. **Deploy Frontend Static + SSL:** Ubah URL produksi di `frontend/js/config.js`, buat site static baru di aaPanel (`inventaris.domainkamu.com`, Pure static), upload isi folder `frontend/`, lalu aktifkan **SSL Let's Encrypt (Force HTTPS)**.
+   Upload `backend/dist/siminventaris-api` ke `/www/wwwroot/api-inventaris/`, set permission `755`, lalu buat `.env` berisi konfigurasi DB, `PORT=3000`, `JWT_SECRET` acak minimal 32 karakter, dan `CORS_ORIGINS` persis origin frontend HTTPS. Jalankan via **Supervisor Manager** / **Go Project**.
+4. **Domain + Reverse Proxy + SSL Backend:** Di **Website -> Add site** (`api-inventaris.domainkamu.com`, Pure static) -> **Reverse Proxy** ke `http://127.0.0.1:3000` -> aktifkan **SSL Let's Encrypt (Force HTTPS)**. Cek `https://api-inventaris.domainkamu.com/api/status`.
+5. **Deploy Frontend Static + SSL:** Ganti `productionApiBaseUrl` di [`frontend/js/config.js`](frontend/js/config.js) dengan URL HTTPS API Anda, buat site static baru (`inventaris.domainkamu.com`), upload isi folder `frontend/`, lalu aktifkan **SSL Let's Encrypt (Force HTTPS)**.
+6. Jalankan checklist verifikasi pada panduan aaPanel sebelum membagikan URL. Ganti semua domain contoh dan akun demo sesuai konfigurasi nyata.
 
 ---
 
@@ -106,8 +108,10 @@ Panduan lengkap langkah demi langkah tersedia di [`DEPLOYMENT_AAPANEL.md`](DEPLO
 | `GET` | `/api/peminjaman` | Daftar peminjaman (`Preload("Barang")` & `Preload("User")`) | Ya | Semua (`member` milik sendiri) |
 | `GET` | `/api/peminjaman/:id` | Detail peminjaman | Ya | Semua (`member` milik sendiri) |
 | `POST` | `/api/peminjaman` | Ajukan peminjaman barang | Ya | Semua |
-| `PUT` | `/api/peminjaman/:id` | Update peminjaman / status | Ya | `admin` (status) / `member` (catatan milik sendiri) |
+| `PUT` | `/api/peminjaman/:id` | Admin mengubah jumlah, tanggal, catatan, dan status; member hanya catatan | Ya | `admin`; `member` hanya data milik sendiri |
 | `DELETE` | `/api/peminjaman/:id` | Hapus peminjaman | Ya | `admin` |
+
+Member hanya dapat melihat dan mengubah catatan peminjaman milik sendiri. Member yang mencoba membaca peminjaman milik pengguna lain menerima `403`; hanya admin yang dapat mengubah status atau menghapus peminjaman. Jumlah stok dikurangi saat peminjaman dibuat dan dikembalikan saat status selesai/ditolak atau data aktif dihapus.
 
 ---
 

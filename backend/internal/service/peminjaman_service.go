@@ -23,17 +23,17 @@ func NewPeminjamanService(repo *repository.PeminjamanRepository, barangRepo *rep
 type CreatePeminjamanInput struct {
 	BarangID       uint   `json:"barang_id" validate:"required,gt=0"`
 	Jumlah         int    `json:"jumlah" validate:"required,gte=1"`
-	TanggalPinjam  string `json:"tanggal_pinjam" validate:"required,min=8,max=20"`
-	TanggalKembali string `json:"tanggal_kembali" validate:"max=20"`
+	TanggalPinjam  string `json:"tanggal_pinjam" validate:"required,datetime=2006-01-02"`
+	TanggalKembali string `json:"tanggal_kembali" validate:"omitempty,datetime=2006-01-02"`
 	Catatan        string `json:"catatan" validate:"max=500"`
 }
 
 type UpdatePeminjamanInput struct {
-	Jumlah         *int   `json:"jumlah" validate:"omitempty,gte=1"`
-	TanggalPinjam  string `json:"tanggal_pinjam" validate:"omitempty,min=8,max=20"`
-	TanggalKembali string `json:"tanggal_kembali" validate:"max=20"`
-	Status         string `json:"status" validate:"omitempty,oneof=dipinjam dikembalikan ditolak"`
-	Catatan        string `json:"catatan" validate:"max=500"`
+	Jumlah         *int    `json:"jumlah" validate:"omitempty,gte=1"`
+	TanggalPinjam  string  `json:"tanggal_pinjam" validate:"omitempty,datetime=2006-01-02"`
+	TanggalKembali string  `json:"tanggal_kembali" validate:"omitempty,datetime=2006-01-02"`
+	Status         string  `json:"status" validate:"omitempty,oneof=dipinjam dikembalikan ditolak"`
+	Catatan        *string `json:"catatan" validate:"omitempty,max=500"`
 }
 
 func (s *PeminjamanService) List(userID uint, role string) ([]model.Peminjaman, error) {
@@ -103,8 +103,8 @@ func (s *PeminjamanService) Update(id uint, userID uint, role string, input Upda
 		return nil, err
 	}
 
-	if role != "admin" && input.Status != "" && input.Status != p.Status {
-		return nil, &AppError{Code: http.StatusForbidden, Message: "Hanya admin yang dapat mengubah status peminjaman"}
+	if err := validatePeminjamanUpdateAccess(role, input); err != nil {
+		return nil, err
 	}
 
 	err = s.repo.DB().Transaction(func(tx *gorm.DB) error {
@@ -133,8 +133,8 @@ func (s *PeminjamanService) Update(id uint, userID uint, role string, input Upda
 		if input.TanggalKembali != "" {
 			p.TanggalKembali = strings.TrimSpace(input.TanggalKembali)
 		}
-		if input.Catatan != "" {
-			p.Catatan = strings.TrimSpace(input.Catatan)
+		if input.Catatan != nil {
+			p.Catatan = strings.TrimSpace(*input.Catatan)
 		}
 
 		if role == "admin" && input.Status != "" && input.Status != oldStatus {
@@ -161,6 +161,19 @@ func (s *PeminjamanService) Update(id uint, userID uint, role string, input Upda
 	return s.repo.FindByID(id)
 }
 
+func validatePeminjamanUpdateAccess(role string, input UpdatePeminjamanInput) error {
+	if role == "admin" {
+		return nil
+	}
+	if input.Jumlah != nil || input.TanggalPinjam != "" || input.TanggalKembali != "" || input.Status != "" {
+		return &AppError{
+			Code:    http.StatusForbidden,
+			Message: "Member hanya dapat mengubah catatan pada peminjaman milik sendiri",
+		}
+	}
+	return nil
+}
+
 func (s *PeminjamanService) Delete(id uint) error {
 	return s.repo.DB().Transaction(func(tx *gorm.DB) error {
 		var p model.Peminjaman
@@ -173,11 +186,12 @@ func (s *PeminjamanService) Delete(id uint) error {
 
 		if p.Status == "dipinjam" {
 			var barang model.Barang
-			if err := tx.First(&barang, p.BarangID).Error; err == nil {
-				barang.Stok += p.Jumlah
-				if err := tx.Save(&barang).Error; err != nil {
-					return err
-				}
+			if err := tx.First(&barang, p.BarangID).Error; err != nil {
+				return err
+			}
+			barang.Stok += p.Jumlah
+			if err := tx.Save(&barang).Error; err != nil {
+				return err
 			}
 		}
 

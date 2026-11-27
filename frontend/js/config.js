@@ -1,11 +1,11 @@
-// Otomatis pakai localhost saat development, dan URL produksi saat di-deploy di aaPanel.
-// GANTI URL produksi di bawah sesuai domain/subdomain backend Anda di aaPanel!
+// Setel URL produksi ini ke domain HTTPS backend aaPanel sebelum mengunggah frontend.
 const isLocal =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1";
+const productionApiBaseUrl = "https://api-inventaris.domainkamu.com/api";
 
 window.APP_CONFIG = {
   API_BASE_URL: isLocal
     ? "http://localhost:3000/api"
-    : "https://api-inventaris.domainkamu.com/api",
+    : productionApiBaseUrl,
 };

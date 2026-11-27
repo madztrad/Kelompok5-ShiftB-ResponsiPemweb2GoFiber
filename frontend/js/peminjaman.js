@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tglInput.value = new Date().toISOString().slice(0, 10);
   }
 
+  setPeminjamanEditMode(false);
   document.getElementById("peminjaman-form")?.addEventListener("submit", handleSavePeminjaman);
   document.getElementById("btn-reset")?.addEventListener("click", resetPeminjamanForm);
 
@@ -87,21 +88,28 @@ async function handleSavePeminjaman(e) {
   setButtonLoading(btn, true, "Menyimpan...");
 
   try {
-    const payload = id
-      ? {
-          jumlah: Number(document.getElementById("jumlah").value),
-          tanggal_pinjam: document.getElementById("tanggal_pinjam").value,
-          tanggal_kembali: document.getElementById("tanggal_kembali").value,
-          catatan: document.getElementById("catatan").value.trim(),
-          ...(isAdmin() ? { status: document.getElementById("status").value } : {}),
-        }
-      : {
-          barang_id: Number(document.getElementById("barang_id").value),
-          jumlah: Number(document.getElementById("jumlah").value),
-          tanggal_pinjam: document.getElementById("tanggal_pinjam").value,
-          tanggal_kembali: document.getElementById("tanggal_kembali").value,
-          catatan: document.getElementById("catatan").value.trim(),
-        };
+    let payload;
+    if (id && !isAdmin()) {
+      payload = {
+        catatan: document.getElementById("catatan").value.trim(),
+      };
+    } else if (id) {
+      payload = {
+        jumlah: Number(document.getElementById("jumlah").value),
+        tanggal_pinjam: document.getElementById("tanggal_pinjam").value,
+        tanggal_kembali: document.getElementById("tanggal_kembali").value,
+        catatan: document.getElementById("catatan").value.trim(),
+        status: document.getElementById("status").value,
+      };
+    } else {
+      payload = {
+        barang_id: Number(document.getElementById("barang_id").value),
+        jumlah: Number(document.getElementById("jumlah").value),
+        tanggal_pinjam: document.getElementById("tanggal_pinjam").value,
+        tanggal_kembali: document.getElementById("tanggal_kembali").value,
+        catatan: document.getElementById("catatan").value.trim(),
+      };
+    }
 
     const res = await apiRequest(id ? `/peminjaman/${id}` : "/peminjaman", {
       method: id ? "PUT" : "POST",
@@ -151,6 +159,7 @@ async function editPeminjaman(id) {
     if (isAdmin()) {
       document.getElementById("status").value = p.status;
     }
+    setPeminjamanEditMode(true);
     document.getElementById("form-title").textContent = `Edit Peminjaman #${p.id}`;
     window.scrollTo({ top: 0, behavior: "smooth" });
   } catch (err) {
@@ -173,8 +182,17 @@ async function deletePeminjaman(id) {
 
 function resetPeminjamanForm() {
   document.getElementById("peminjaman-id").value = "";
-  document.getElementById("barang_id").disabled = false;
+  setPeminjamanEditMode(false);
   document.getElementById("peminjaman-form").reset();
   document.getElementById("tanggal_pinjam").value = new Date().toISOString().slice(0, 10);
   document.getElementById("form-title").textContent = "Ajukan Peminjaman";
+}
+
+function setPeminjamanEditMode(isEditing) {
+  const memberEdit = isEditing && !isAdmin();
+  document.getElementById("barang_id").disabled = isEditing;
+  document.getElementById("jumlah").disabled = memberEdit;
+  document.getElementById("tanggal_pinjam").disabled = memberEdit;
+  document.getElementById("tanggal_kembali").disabled = memberEdit;
+  document.getElementById("member-edit-note")?.classList.toggle("hidden", !memberEdit);
 }
