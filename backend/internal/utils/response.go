@@ -26,7 +26,7 @@ func Error(c fiber.Ctx, status int, pesan string) error {
 func ValidationError(c fiber.Ctx, errors map[string]string) error {
 	return c.Status(fiber.StatusUnprocessableEntity).JSON(APIResponse{
 		Sukses: false,
-		Pesan:  "Validasi input gagal",
+		Pesan:  "Validasi gagal",
 		Data:   errors,
 	})
 }

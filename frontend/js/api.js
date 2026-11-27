@@ -28,7 +28,9 @@ function requireAuth() {
 function logoutLocal() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
-  window.location.href = "login.html";
+  if (typeof window !== "undefined" && typeof window.location !== "undefined" && window.location.pathname !== "/login.html") {
+    window.location.href = "login.html";
+  }
 }
 
 function escapeHtml(value) {
@@ -86,7 +88,7 @@ async function apiRequest(endpoint, options = {}) {
     headers,
   });
 
-  if (res.status === 401 && !endpoint.startsWith("/auth/login")) {
+  if (res.status === 401 && !endpoint.startsWith("/auth/login") && !endpoint.startsWith("/auth/register")) {
     logoutLocal();
     throw new Error("Sesi berakhir, silakan login ulang.");
   }

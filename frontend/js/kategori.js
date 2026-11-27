@@ -51,6 +51,10 @@ async function loadKategori() {
 
 async function handleSaveKategori(e) {
   e.preventDefault();
+  if (!isAdmin()) {
+    showAlert("alert-box", "Akses ditolak: hanya admin yang dapat menyimpan kategori", "error");
+    return;
+  }
   hideAlert("alert-box");
   const btn = document.getElementById("btn-save");
   const id = document.getElementById("kategori-id").value;
@@ -91,6 +95,10 @@ async function detailKategori(id) {
 }
 
 async function editKategori(id) {
+  if (!isAdmin()) {
+    showAlert("alert-box", "Akses ditolak: hanya admin yang dapat mengubah kategori", "error");
+    return;
+  }
   hideAlert("alert-box");
   try {
     const res = await apiRequest(`/kategori/${id}`);
@@ -106,6 +114,10 @@ async function editKategori(id) {
 }
 
 async function deleteKategori(id) {
+  if (!isAdmin()) {
+    showAlert("alert-box", "Akses ditolak: hanya admin yang dapat menghapus kategori", "error");
+    return;
+  }
   if (!confirm("Yakin ingin menghapus kategori ini?")) return;
   hideAlert("alert-box");
   try {
