@@ -6,13 +6,21 @@ Aplikasi web full-stack untuk manajemen inventaris dan peminjaman barang laborat
 
 ## Anggota Kelompok 5 (Shift B) & Pembagian Job Desk
 
-> **Catatan:** Lengkapi Nama & NIM masing-masing anggota sesuai data kelompok.
+> **Catatan:** Pastikan NIM Dimas (`H1H024032`, sebelumnya tertulis `hih204032`) dan NIM Wendy sudah benar sebelum pengumpulan.
 
 | Nama | NIM | Job Desk | Endpoint atau Halaman yang Dikerjakan |
 | :--- | :--- | :--- | :--- |
-| Anggota 1 | H1H0240xx | Autentikasi, Middleware JWT/Role, CRUD Kategori, Shared Fetch Helper | `/api/auth/*`, `/api/kategori/*`, `login.html`, `register.html`, `profile.html`, `kategori.html`, `js/api.js` |
-| Anggota 2 | H1H0240xx | Koneksi Database, Seeder, Middleware Global (CORS/Logger/Recover), CRUD Barang (Preload, Pagination, Search/Filter) | `/api/status`, `/api/barang/*`, `index.html`, `barang.html`, `js/barang.js` |
-| Anggota 3 | H1H0240xx | CRUD Peminjaman (Preload Barang & User, Ownership/Role), Deployment HTTPS & Dokumentasi | `/api/peminjaman/*`, `peminjaman.html`, `js/peminjaman.js`, Deploy & `README.md` |
+| Muhammad Faiz Mubarok | H1H024051 | Autentikasi, Middleware JWT/Role, CRUD Kategori, Shared Fetch Helper | `/api/auth/*`, `/api/kategori/*`, `login.html`, `register.html`, `profile.html`, `kategori.html`, `js/api.js`, `js/auth.js`, `js/kategori.js` |
+| Dimas Rafif Zaidam | H1H024032 | Koneksi Database, Seeder, Middleware Global (CORS/Logger/Recover), CRUD Barang (Preload, Pagination, Search/Filter) | `/api/status`, `/api/barang/*`, `index.html`, `barang.html`, `js/barang.js`, `js/navbar.js` |
+| Wendy Virtus | H1H0240xx | CRUD Peminjaman (Preload Barang & User, Ownership/Role), Deployment aaPanel HTTPS & Dokumentasi | `/api/peminjaman/*`, `peminjaman.html`, `js/peminjaman.js`, `js/config.js`, Deploy aaPanel & `README.md` |
+
+---
+
+## Prinsip Monorepo & Pengerjaan Independen
+
+1. **1 Repo, 2 Zona Utama:** `backend/` (RESTful API Go Fiber v3) dan `frontend/` (Multi-page HTML + Tailwind CDN + Vanilla JS).
+2. **1 Modul = 1 File per Layer:** Setiap resource dipisah pada `model/`, `repository/`, `service/`, `handler/`, dan `router/*_routes.go` agar 3 anggota bisa bekerja paralel tanpa konflik merge.
+3. **Bisa Dikerjakan Sendiri Tanpa Saling Tunggu:** Fondasi bersama (koneksi MySQL, `AutoMigrate`, seeder akun demo `admin@lab.test` & `member@lab.test`, middleware JWT/role, dan `js/api.js`) sudah tersedia di `main`. Masing-masing anggota bisa langsung menjalankan backend lokal dan mengerjakan/menguji modulnya secara mandiri.
 
 ---
 
@@ -45,10 +53,26 @@ Buka `http://localhost:5500/login.html`.
 
 ---
 
+## Tutorial Deploy di aaPanel (Ringkas)
+
+Panduan lengkap langkah demi langkah tersedia di [`DEPLOYMENT_AAPANEL.md`](DEPLOYMENT_AAPANEL.md).
+
+1. **Buat Database MySQL di aaPanel:** Menu **Databases** -> **Add DB** (`siminventaris_db`, Access: `127.0.0.1`).
+2. **Build Binary Backend & Upload:**
+   ```bash
+   cd backend
+   sh build-linux.sh
+   ```
+   Upload `backend/dist/siminventaris-api` ke `/www/wwwroot/api-inventaris/`, set permission `755`, buat `.env` (isi DB, `JWT_SECRET` acak panjang, dan `CORS_ORIGINS=https://inventaris.domainkamu.com`), lalu jalankan via **Supervisor Manager** / **Go Project** pada port `3000`.
+3. **Domain + Reverse Proxy + SSL Backend:** Di **Website -> Add site** (`api-inventaris.domainkamu.com`, Pure static) -> **Reverse Proxy** ke `http://127.0.0.1:3000` -> aktifkan **SSL Let's Encrypt (Force HTTPS)**. Cek `https://api-inventaris.domainkamu.com/api/status`.
+4. **Deploy Frontend Static + SSL:** Ubah URL produksi di `frontend/js/config.js`, buat site static baru di aaPanel (`inventaris.domainkamu.com`, Pure static), upload isi folder `frontend/`, lalu aktifkan **SSL Let's Encrypt (Force HTTPS)**.
+
+---
+
 ## URL Deployment (Produksi)
-- **Frontend:** *(isi setelah deploy, misal `https://siminventaris-k5.vercel.app`)*
-- **Backend API:** *(isi setelah deploy, misal `https://api-siminventaris-k5.koyeb.app`)*
-- **Status API:** *(misal `https://api-siminventaris-k5.koyeb.app/api/status`)*
+- **Frontend:** *(isi setelah deploy, misal `https://inventaris.domainkamu.com`)*
+- **Backend API:** *(isi setelah deploy, misal `https://api-inventaris.domainkamu.com`)*
+- **Status API:** *(misal `https://api-inventaris.domainkamu.com/api/status`)*
 
 ---
 
