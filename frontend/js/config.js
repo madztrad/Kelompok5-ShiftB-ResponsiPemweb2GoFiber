@@ -8,4 +8,8 @@ window.APP_CONFIG = {
   API_BASE_URL: isLocal
     ? "http://localhost:3000/api"
     : productionApiBaseUrl,
+  // True bila frontend dibuka dari domain asli tetapi URL API masih nilai contoh.
+  // Dipakai api.js untuk menampilkan pesan yang jelas, bukan "Failed to fetch".
+  API_URL_IS_PLACEHOLDER: !isLocal && productionApiBaseUrl.includes("domainkamu.com"),
 };
+

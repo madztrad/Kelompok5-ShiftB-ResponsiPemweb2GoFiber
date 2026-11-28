@@ -31,6 +31,21 @@ Cara sederhana adalah compile binary Linux di mesin lokal lalu upload ke aaPanel
    Hasilnya ada di `backend/dist/siminventaris-api`.
    Script menghasilkan binary Linux `amd64`. Jika VPS menggunakan ARM64, ubah target `GOARCH` di `build-linux.sh` sebelum build.
 
+> **Jika repo di-clone langsung di server:** folder proyek Go adalah `<repo>/backend` (di situlah `go.mod` berada), bukan root monorepo. Paket `main` ada di `backend/cmd/api`, sehingga build harus dijalankan **di dalam** `backend/` dengan target eksplisit:
+> ```bash
+> cd <repo>/backend
+> go build -o siminventaris-api ./cmd/api
+> ```
+> Menjalankan `go build` polos di root monorepo akan gagal karena tidak ada file Go di sana. Perhatikan juga `go.mod` meminta Go **1.26**; bila Go di server lebih lama, build akan menolak dengan pesan `go.mod requires go >= 1.26.0` — dalam kasus itu tetap pakai binary hasil build dari laptop. Yang penting: **binary dan `.env` harus berada di `<repo>/backend/`**, karena `.env` dibaca dari direktori kerja proses.
+
+**Pembaruan berikutnya: tidak perlu upload binary lagi.** Setelah repo ada di server dan Go tersedia, cukup jalankan dari folder repo:
+
+```bash
+sh backend/deploy-server.sh
+```
+
+Script itu menarik `git pull --ff-only`, mem-build `./cmd/api` menjadi `backend/siminventaris-api`, lalu me-restart daemon lewat `supervisorctl` bila tersedia (kalau tidak, restart dari aaPanel). `.env` sengaja tidak disentuh karena tidak disimpan di Git.
+
 2. Di aaPanel -> **Files**, buat folder `/www/wwwroot/api-inventaris`.
 3. Upload file `siminventaris-api` ke `/www/wwwroot/api-inventaris/`, lalu ubah permission menjadi executable (`755` / `chmod +x siminventaris-api`).
 4. Buat file `/www/wwwroot/api-inventaris/.env` di server. File ini hanya berisi rahasia produksi dan **tidak boleh dimasukkan ke repositori**:
@@ -96,3 +111,20 @@ Cara sederhana adalah compile binary Linux di mesin lokal lalu upload ke aaPanel
 - Sebagai `admin`, pastikan bisa melihat seluruh peminjaman, mengubah status, menghapus data, dan stok barang konsisten setelah peminjaman dibuat/dikembalikan/dihapus.
 - Refresh langsung halaman `login.html`, `barang.html`, `kategori.html`, dan `peminjaman.html` — pastikan **tidak 404**.
 - Pastikan `frontend/js/config.js` menunjuk ke API produksi dan `CORS_ORIGINS` memuat origin frontend produksi yang tepat.
+
+
+---
+
+## 5. Kendala Umum Saat Deploy
+
+| Gejala | Penyebab | Solusi |
+| :--- | :--- | :--- |
+| Log daemon berhenti dengan `JWT_SECRET wajib diisi string acak minimal 32 karakter (nilai contoh/bawaan ditolak)` | `.env` belum dibuat di folder binary, atau `JWT_SECRET` masih nilai contoh dari `.env.example` | Buat `.env` di **Run Dir** yang sama dengan binary, isi dengan hasil `openssl rand -base64 48`, lalu restart daemon |
+| Log: `Gagal terhubung ke database: ... Access denied for user 'siminventaris_user'@'localhost'` | MySQL di server memakai `skip_name_resolve`, sehingga koneksi TCP dari `127.0.0.1` tidak dianggap sebagai `localhost` | Buat user/grant yang sama untuk host `127.0.0.1`, atau sesuaikan `DB_HOST` dengan host user yang terdaftar di aaPanel |
+| Console browser: `Failed to fetch` atau pesan CORS | `CORS_ORIGINS` tidak sama persis dengan origin frontend — beda `http`/`https`, beda subdomain, atau ada trailing slash | Tulis origin persis, tanpa trailing slash, contoh `CORS_ORIGINS=https://inventaris.domainkamu.com`, lalu restart backend |
+| Frontend memanggil `api-inventaris.domainkamu.com` padahal domain sudah diganti | `productionApiBaseUrl` di `frontend/js/config.js` belum diubah **sebelum** upload | Perbaiki `config.js`, upload ulang, lalu muat ulang halaman dengan hard reload |
+| `https://api-inventaris.domainkamu.com/api/status` membalas **502** | Daemon backend mati, atau reverse proxy menunjuk port yang salah | Cek status Supervisor/Go Project, pastikan target proxy `http://127.0.0.1:3000`, dan baca log daemon |
+| Refresh `barang.html` menghasilkan **404** | Isi folder `frontend/` ter-upload ke subfolder, bukan ke document root site | Upload **isi** folder `frontend/` (bukan foldernya) langsung ke root site |
+| Bug lama muncul lagi saat demo/video | Browser menyimpan `js/*.js` versi lama | Hard reload (`Cmd`/`Ctrl` + `Shift` + `R`) atau gunakan jendela Incognito |
+
+Setelah semua rampung, perbarui bagian **URL Deployment** dan **Tautan Video** pada `README.md` — dua bagian itu masih placeholder dan termasuk yang diperiksa asisten.

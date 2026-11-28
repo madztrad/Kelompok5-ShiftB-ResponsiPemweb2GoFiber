@@ -115,6 +115,12 @@ function setButtonLoading(btn, loading, loadingText = "Memproses...") {
 }
 
 async function apiRequest(endpoint, options = {}) {
+  if (window.APP_CONFIG.API_URL_IS_PLACEHOLDER) {
+    throw new Error(
+      "URL API masih domain contoh. Ubah productionApiBaseUrl di frontend/js/config.js menjadi URL backend Anda, lalu muat ulang halaman."
+    );
+  }
+
   const token = getToken();
   const headers = {
     "Content-Type": "application/json",
