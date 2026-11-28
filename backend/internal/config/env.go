@@ -9,6 +9,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const (
+	minJWTSecretLength = 32
+	legacyDevSecret    = "dev_only_secret_ganti_di_env"
+)
+
 type EnvConfig struct {
 	Port           string
 	DBHost         string
@@ -49,6 +54,11 @@ func LoadEnv() EnvConfig {
 		}
 	}
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if len(jwtSecret) < minJWTSecretLength || jwtSecret == legacyDevSecret {
+		log.Fatalf("JWT_SECRET wajib diisi dengan string acak minimal %d karakter (jangan memakai nilai bawaan)", minJWTSecretLength)
+	}
+
 	return EnvConfig{
 		Port:           port,
 		DBHost:         getEnvOrDefault("DB_HOST", "127.0.0.1"),
@@ -56,7 +66,7 @@ func LoadEnv() EnvConfig {
 		DBUser:         getEnvOrDefault("DB_USER", "root"),
 		DBPass:         os.Getenv("DB_PASS"),
 		DBName:         getEnvOrDefault("DB_NAME", "siminventaris_db"),
-		JWTSecret:      getEnvOrDefault("JWT_SECRET", "dev_only_secret_ganti_di_env"),
+		JWTSecret:      jwtSecret,
 		JWTExpireHours: expireHours,
 		CORSOrigins:    origins,
 	}

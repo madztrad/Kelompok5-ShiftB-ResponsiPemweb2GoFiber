@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"log"
 
 	"github.com/gofiber/fiber/v3"
 
@@ -79,5 +80,7 @@ func handleServiceError(c fiber.Ctx, err error) error {
 	if errors.As(err, &appErr) {
 		return utils.Error(c, appErr.Code, appErr.Message)
 	}
+	// Detail error hanya dicatat di log server; klien menerima pesan generik.
+	log.Printf("ERROR %s %s: %v", c.Method(), c.Path(), err)
 	return utils.Error(c, fiber.StatusInternalServerError, "Terjadi kesalahan internal server")
 }
