@@ -148,3 +148,46 @@ Halaman login dan register kini memeriksa keterjangkauan API saat dimuat, lalu m
    - `net::ERR_NAME_NOT_RESOLVED` -> DNS subdomain API belum mengarah ke VPS.
 4. **Pastikan `frontend/js/config.js` menunjuk domain API yang benar**, lalu hard reload (`Cmd`/`Ctrl` + `Shift` + `R`) karena berkas `.js` sering tersimpan di cache browser.
 
+---
+
+## 6. Halaman Bantu Diagnosa
+
+Buka `https://inventaris.domainmu.com/diagnosa.html`. Halaman ini menampilkan origin halaman, alamat API yang sedang dipakai beserta mode asalnya, hasil `GET /api/status`, dan hasil `POST /api/auth/login` dengan kredensial yang sengaja salah:
+
+- `GET /status` menjawab `200` dan `POST /auth/login` menjawab `400`/`401` -> backend terjangkau dan **preflight CORS lolos**. Kalau login dari halaman asli masih gagal, masalahnya ada di kredensial atau `config.js`, bukan jaringan.
+- `GET /status` gagal tetapi dibuka dari browser yang sama -> daemon backend atau reverse proxy bermasalah.
+- Keduanya gagal sementara `https://api-inventaris.domainmu.com/api/status` jalan di tab baru -> `CORS_ORIGINS` belum memuat origin frontend.
+- Keduanya menjawab `404` dengan mode `same-origin` -> reverse proxy `/api` belum dipasang (lihat bagian 7).
+
+Untuk menguji alamat API lain tanpa mengedit file: `diagnosa.html?api=https://api-domainmu.com/api`. Kembalikan ke bawaan dengan `diagnosa.html?api=reset`.
+
+---
+
+## 7. Opsi Satu Domain (Tanpa CORS) — Paling Sedikit Masalah
+
+Memakai subdomain API terpisah mengharuskan `CORS_ORIGINS` selalu tepat. Cara yang lebih tahan salah: pasang API pada domain frontend yang sama.
+
+1. Pada site `inventaris.domainmu.com`, buka **Settings -> Reverse Proxy -> Add**:
+   - Path / Proxy Directory: `/api`
+   - Target URL: `http://127.0.0.1:3000`
+   - Simpan, lalu pastikan SSL site aktif dan **Force HTTPS** menyala.
+2. Biarkan `productionApiBaseUrl` di `frontend/js/config.js` tetap berisi domain contoh. Frontend otomatis memakai `https://inventaris.domainmu.com/api` (mode `same-origin`), sehingga tidak ada permintaan lintas origin dan CORS tidak lagi menentukan.
+3. Tetap isi `CORS_ORIGINS=https://inventaris.domainmu.com` di `backend/.env` untuk berjaga-jaga.
+
+Uji `https://inventaris.domainmu.com/api/status` — harus `200` dengan `{"sukses":true,...}`. Subdomain `api-inventaris` tidak lagi diperlukan pada pola ini.
+
+---
+
+## 8. Menyimpan Alamat API Tanpa Edit File
+
+Frontend menentukan alamat API dengan urutan: parameter `?api=`, lalu `localStorage.apiBaseUrl`, lalu `localhost:3000` untuk pengujian lokal, lalu `productionApiBaseUrl` di `config.js`, dan terakhir origin halaman + `/api`.
+
+Artinya, untuk deploy cepat cukup buka sekali:
+
+```
+https://inventaris.domainmu.com/login.html?api=https://api-inventaris.domainmu.com/api
+```
+
+Alamat itu tersimpan di browser dan dipakai halaman berikutnya. Hapus dengan `?api=reset`. Untuk pemakaian bersama, tetap isi `productionApiBaseUrl` agar semua pengunjung memakai alamat yang benar.
+
+

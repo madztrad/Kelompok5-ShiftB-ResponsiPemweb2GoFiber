@@ -114,10 +114,25 @@ function setButtonLoading(btn, loading, loadingText = "Memproses...") {
   }
 }
 
+function pesanStatusTidakOk(status) {
+  if (status === 404 && window.APP_CONFIG.API_MODE === "same-origin") {
+    return (
+      `Path /api tidak tersedia di ${window.location.origin} (HTTP 404). ` +
+      "Pasang Reverse Proxy /api ke http://127.0.0.1:3000 pada site frontend, " +
+      "atau isi productionApiBaseUrl di frontend/js/config.js dengan URL API Anda."
+    );
+  }
+  return (
+    `API di ${window.APP_CONFIG.API_BASE_URL} menjawab HTTP ${status}, bukan 200. ` +
+    "Periksa log daemon backend dan target reverse proxy."
+  );
+}
+
 // Menyusun pesan yang bisa ditindaklanjuti saat fetch gagal total: bukan respons
 // error dari server, melainkan koneksi putus, diblokir CORS, atau mixed content.
 function pesanGagalKoneksi() {
   const base = window.APP_CONFIG.API_BASE_URL;
+  const mode = window.APP_CONFIG.API_MODE;
   const origin = window.location.origin;
 
   if (window.location.protocol === "file:") {
@@ -133,21 +148,21 @@ function pesanGagalKoneksi() {
       "Pakai URL API berawalan https://, mis. https://api-inventaris.domainmu.com/api"
     );
   }
+
+  const awal =
+    mode === "same-origin"
+      ? `Situs ini memakai API satu domain: ${base} (reverse proxy /api ke backend). `
+      : `Tidak dapat menghubungi API di ${base} (dipanggil dari ${origin}). `;
+
   return (
-    `Tidak dapat menghubungi API di ${base} (dipanggil dari ${origin}). ` +
+    awal +
     `Periksa berurutan: (1) buka ${base}/status di tab baru — bila gagal, daemon backend atau reverse proxy mati; ` +
     `(2) CORS_ORIGINS di backend/.env harus memuat persis ${origin} tanpa trailing slash, lalu restart backend; ` +
-    "(3) pastikan URL di frontend/js/config.js tidak salah ketik."
+    "(3) buka diagnosa.html untuk rincian, atau jalankan diagnosa.html?api=<url-api-anda>."
   );
 }
 
 async function apiRequest(endpoint, options = {}) {
-  if (window.APP_CONFIG.API_URL_IS_PLACEHOLDER) {
-    throw new Error(
-      "URL API masih domain contoh. Ubah productionApiBaseUrl di frontend/js/config.js menjadi URL backend Anda, lalu muat ulang halaman."
-    );
-  }
-
   const token = getToken();
   const headers = {
     "Content-Type": "application/json",
@@ -184,6 +199,9 @@ async function apiRequest(endpoint, options = {}) {
       const details = Object.values(data.data).join(" | ");
       throw new Error(`${data.pesan}: ${details}`);
     }
+    if (res.status === 404 || res.status === 502 || res.status === 503) {
+      throw new Error(pesanStatusTidakOk(res.status));
+    }
     throw new Error(data.pesan || `Terjadi kesalahan (${res.status})`);
   }
 
@@ -193,18 +211,12 @@ async function apiRequest(endpoint, options = {}) {
 // Memeriksa keterjangkauan API lebih awal di halaman login/register, sehingga
 // penyebabnya terlihat sebelum tombol Masuk ditekan (tanpa harus buka DevTools).
 async function periksaKoneksiApi(containerId = "alert-box") {
-  if (window.APP_CONFIG.API_URL_IS_PLACEHOLDER) return;
   try {
     const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/status`, {
       headers: { Accept: "application/json" },
     });
     if (!res.ok) {
-      showAlert(
-        containerId,
-        `API di ${window.APP_CONFIG.API_BASE_URL} menjawab HTTP ${res.status}, bukan 200. ` +
-          "Periksa log daemon backend dan target reverse proxy.",
-        "error"
-      );
+      showAlert(containerId, pesanStatusTidakOk(res.status), "error");
     }
   } catch {
     showAlert(containerId, pesanGagalKoneksi(), "error");
