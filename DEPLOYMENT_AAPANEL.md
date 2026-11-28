@@ -121,10 +121,30 @@ Script itu menarik `git pull --ff-only`, mem-build `./cmd/api` menjadi `backend/
 | :--- | :--- | :--- |
 | Log daemon berhenti dengan `JWT_SECRET wajib diisi string acak minimal 32 karakter (nilai contoh/bawaan ditolak)` | `.env` belum dibuat di folder binary, atau `JWT_SECRET` masih nilai contoh dari `.env.example` | Buat `.env` di **Run Dir** yang sama dengan binary, isi dengan hasil `openssl rand -base64 48`, lalu restart daemon |
 | Log: `Gagal terhubung ke database: ... Access denied for user 'siminventaris_user'@'localhost'` | MySQL di server memakai `skip_name_resolve`, sehingga koneksi TCP dari `127.0.0.1` tidak dianggap sebagai `localhost` | Buat user/grant yang sama untuk host `127.0.0.1`, atau sesuaikan `DB_HOST` dengan host user yang terdaftar di aaPanel |
-| Console browser: `Failed to fetch` atau pesan CORS | `CORS_ORIGINS` tidak sama persis dengan origin frontend — beda `http`/`https`, beda subdomain, atau ada trailing slash | Tulis origin persis, tanpa trailing slash, contoh `CORS_ORIGINS=https://inventaris.domainkamu.com`, lalu restart backend |
+| Console browser: `TypeError: Failed to fetch` | Permintaan tidak pernah sampai ke backend: `CORS_ORIGINS` tidak memuat origin frontend, halaman HTTPS memanggil API `http://` (mixed content), atau daemon/reverse proxy mati | Ikuti urutan diagnosis di bagian **5.1** di bawah |
 | Frontend memanggil `api-inventaris.domainkamu.com` padahal domain sudah diganti | `productionApiBaseUrl` di `frontend/js/config.js` belum diubah **sebelum** upload | Perbaiki `config.js`, upload ulang, lalu muat ulang halaman dengan hard reload |
 | `https://api-inventaris.domainkamu.com/api/status` membalas **502** | Daemon backend mati, atau reverse proxy menunjuk port yang salah | Cek status Supervisor/Go Project, pastikan target proxy `http://127.0.0.1:3000`, dan baca log daemon |
 | Refresh `barang.html` menghasilkan **404** | Isi folder `frontend/` ter-upload ke subfolder, bukan ke document root site | Upload **isi** folder `frontend/` (bukan foldernya) langsung ke root site |
 | Bug lama muncul lagi saat demo/video | Browser menyimpan `js/*.js` versi lama | Hard reload (`Cmd`/`Ctrl` + `Shift` + `R`) atau gunakan jendela Incognito |
 
 Setelah semua rampung, perbarui bagian **URL Deployment** dan **Tautan Video** pada `README.md` — dua bagian itu masih placeholder dan termasuk yang diperiksa asisten.
+
+---
+
+## 5.1 Diagnosis `Failed to fetch`
+
+Halaman login dan register kini memeriksa keterjangkauan API saat dimuat, lalu menampilkan penyebabnya: URL API yang dipanggil, origin halaman, dan langkah periksa. Bila banner itu muncul, atau muncul `TypeError: Failed to fetch` saat menekan tombol, ikuti urutan ini:
+
+1. **Buka `https://api-inventaris.domainmu.com/api/status` di tab baru.**
+   - Koneksi ditolak / timeout -> daemon backend mati, atau reverse proxy salah target. Cek status Supervisor/Go Project dan baca log daemon.
+   - `502 Bad Gateway` -> reverse proxy hidup tetapi tidak menemukan backend. Pastikan targetnya `http://127.0.0.1:3000` dan backend benar-benar listen di port itu.
+   - `200` dengan `{"sukses":true,...}` -> API sehat, lanjut ke langkah 2.
+2. **Coba login sekali lagi, lalu lihat log daemon backend.** Bila muncul baris
+   `CORS: origin "https://inventaris.domainmu.com" tidak ada di CORS_ORIGINS [...]`,
+   artinya origin frontend belum terdaftar. Tambahkan origin tersebut **persis** (tanpa trailing slash) ke `CORS_ORIGINS` di `backend/.env`, lalu restart backend.
+3. **DevTools -> tab Network -> klik request yang gagal:**
+   - `(blocked:mixed-content)` -> halaman HTTPS memanggil API `http://`. Ganti `productionApiBaseUrl` menjadi URL API `https://`.
+   - `CORS error` atau respons tanpa header `Access-Control-Allow-Origin` -> ulangi langkah 2.
+   - `net::ERR_NAME_NOT_RESOLVED` -> DNS subdomain API belum mengarah ke VPS.
+4. **Pastikan `frontend/js/config.js` menunjuk domain API yang benar**, lalu hard reload (`Cmd`/`Ctrl` + `Shift` + `R`) karena berkas `.js` sering tersimpan di cache browser.
+

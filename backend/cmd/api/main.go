@@ -39,6 +39,13 @@ func main() {
 
 	app.Use(recover.New())
 	app.Use(logger.New())
+	// Catat origin yang tidak diizinkan agar kesalahan CORS langsung terlihat di log server.
+	app.Use(func(c fiber.Ctx) error {
+		if origin := c.Get("Origin"); origin != "" && !originDiizinkan(cfg.CORSOrigins, origin) {
+			log.Printf("CORS: origin %q tidak ada di CORS_ORIGINS %v", origin, cfg.CORSOrigins)
+		}
+		return c.Next()
+	})
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: cfg.CORSOrigins,
 		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -49,4 +56,14 @@ func main() {
 
 	log.Printf("Server berjalan di port :%s", cfg.Port)
 	log.Fatal(app.Listen(":" + cfg.Port))
+}
+
+// originDiizinkan memeriksa apakah origin permintaan terdaftar pada CORS_ORIGINS.
+func originDiizinkan(origins []string, origin string) bool {
+	for _, allowed := range origins {
+		if allowed == origin || allowed == "*" {
+			return true
+		}
+	}
+	return false
 }

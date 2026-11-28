@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
       window.location.href = "index.html";
       return;
     }
+    periksaKoneksiApi();
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       hideAlert("alert-box");
@@ -32,6 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const registerForm = document.getElementById("register-form");
   if (registerForm) {
+    periksaKoneksiApi();
     registerForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       hideAlert("alert-box");

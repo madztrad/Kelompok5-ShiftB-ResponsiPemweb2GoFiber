@@ -114,6 +114,33 @@ function setButtonLoading(btn, loading, loadingText = "Memproses...") {
   }
 }
 
+// Menyusun pesan yang bisa ditindaklanjuti saat fetch gagal total: bukan respons
+// error dari server, melainkan koneksi putus, diblokir CORS, atau mixed content.
+function pesanGagalKoneksi() {
+  const base = window.APP_CONFIG.API_BASE_URL;
+  const origin = window.location.origin;
+
+  if (window.location.protocol === "file:") {
+    return (
+      "Halaman ini dibuka langsung dari file (file://), sehingga browser menolak memanggil API. " +
+      "Jalankan lewat server statis (mis. python3 -m http.server 5500 di folder frontend/), " +
+      "lalu buka http://localhost:5500/login.html"
+    );
+  }
+  if (window.location.protocol === "https:" && base.startsWith("http://")) {
+    return (
+      `Halaman ini HTTPS tetapi API masih ${base}. Browser memblokir permintaan campuran (mixed content). ` +
+      "Pakai URL API berawalan https://, mis. https://api-inventaris.domainmu.com/api"
+    );
+  }
+  return (
+    `Tidak dapat menghubungi API di ${base} (dipanggil dari ${origin}). ` +
+    `Periksa berurutan: (1) buka ${base}/status di tab baru — bila gagal, daemon backend atau reverse proxy mati; ` +
+    `(2) CORS_ORIGINS di backend/.env harus memuat persis ${origin} tanpa trailing slash, lalu restart backend; ` +
+    "(3) pastikan URL di frontend/js/config.js tidak salah ketik."
+  );
+}
+
 async function apiRequest(endpoint, options = {}) {
   if (window.APP_CONFIG.API_URL_IS_PLACEHOLDER) {
     throw new Error(
@@ -130,10 +157,17 @@ async function apiRequest(endpoint, options = {}) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let res;
+  try {
+    res = await fetch(`${window.APP_CONFIG.API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch {
+    // fetch hanya melempar TypeError ("Failed to fetch") untuk masalah jaringan/CORS,
+    // jadi penyebabnya diterjemahkan di sini.
+    throw new Error(pesanGagalKoneksi());
+  }
 
   if (res.status === 401 && !endpoint.startsWith("/auth/login") && !endpoint.startsWith("/auth/register")) {
     logoutLocal();
@@ -154,4 +188,25 @@ async function apiRequest(endpoint, options = {}) {
   }
 
   return data;
+}
+
+// Memeriksa keterjangkauan API lebih awal di halaman login/register, sehingga
+// penyebabnya terlihat sebelum tombol Masuk ditekan (tanpa harus buka DevTools).
+async function periksaKoneksiApi(containerId = "alert-box") {
+  if (window.APP_CONFIG.API_URL_IS_PLACEHOLDER) return;
+  try {
+    const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/status`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) {
+      showAlert(
+        containerId,
+        `API di ${window.APP_CONFIG.API_BASE_URL} menjawab HTTP ${res.status}, bukan 200. ` +
+          "Periksa log daemon backend dan target reverse proxy.",
+        "error"
+      );
+    }
+  } catch {
+    showAlert(containerId, pesanGagalKoneksi(), "error");
+  }
 }
