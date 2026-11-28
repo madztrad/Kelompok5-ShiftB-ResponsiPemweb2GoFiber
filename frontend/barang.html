@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Barang — SimInventaris</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen">
@@ -24,23 +25,23 @@
       <form id="barang-form" class="grid gap-4 md:grid-cols-3">
         <input type="hidden" id="barang-id" />
         <div>
-          <label class="block text-sm font-medium mb-1">Kode Barang</label>
+          <label for="kode_barang" class="block text-sm font-medium mb-1">Kode Barang</label>
           <input type="text" id="kode_barang" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="LAB-001" />
         </div>
         <div>
-          <label class="block text-sm font-medium mb-1">Nama Barang</label>
+          <label for="nama" class="block text-sm font-medium mb-1">Nama Barang</label>
           <input type="text" id="nama" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Oscilloscope Digital" />
         </div>
         <div>
-          <label class="block text-sm font-medium mb-1">Kategori</label>
+          <label for="kategori_id" class="block text-sm font-medium mb-1">Kategori</label>
           <select id="kategori_id" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></select>
         </div>
         <div>
-          <label class="block text-sm font-medium mb-1">Stok</label>
+          <label for="stok" class="block text-sm font-medium mb-1">Stok</label>
           <input type="number" id="stok" min="0" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" value="1" />
         </div>
         <div>
-          <label class="block text-sm font-medium mb-1">Kondisi</label>
+          <label for="kondisi" class="block text-sm font-medium mb-1">Kondisi</label>
           <select id="kondisi" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
             <option value="baik">Baik</option>
             <option value="rusak_ringan">Rusak Ringan</option>
@@ -56,9 +57,9 @@
 
     <section class="rounded-xl border border-slate-200 bg-white p-4">
       <form id="filter-form" class="grid gap-3 md:grid-cols-4">
-        <input type="text" id="search" placeholder="Cari nama atau kode barang..." class="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-        <select id="filter-kategori" class="rounded-lg border border-slate-300 px-3 py-2 text-sm"></select>
-        <select id="filter-kondisi" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <input type="text" id="search" aria-label="Cari nama atau kode barang" placeholder="Cari nama atau kode barang..." class="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        <select id="filter-kategori" aria-label="Filter kategori" class="rounded-lg border border-slate-300 px-3 py-2 text-sm"></select>
+        <select id="filter-kondisi" aria-label="Filter kondisi" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
           <option value="">Semua Kondisi</option>
           <option value="baik">Baik</option>
           <option value="rusak_ringan">Rusak Ringan</option>

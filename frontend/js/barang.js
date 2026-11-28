@@ -55,7 +55,7 @@ async function loadKategoriOptions() {
 
 async function loadBarang() {
   const tbody = document.getElementById("barang-tbody");
-  tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">Memuat data barang...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">Memuat data barang...</td></tr>`;
 
   const params = new URLSearchParams({
     page: String(currentPage),
@@ -79,7 +79,7 @@ async function loadBarang() {
     document.getElementById("btn-next").disabled = meta.page >= meta.total_halaman;
 
     if (items.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">Data barang tidak ditemukan.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">Data barang tidak ditemukan.</td></tr>`;
       return;
     }
 
@@ -91,7 +91,7 @@ async function loadBarang() {
         <td class="px-4 py-3 font-semibold">${escapeHtml(b.nama)}</td>
         <td class="px-4 py-3">${escapeHtml(b.kategori?.nama || "-")}</td>
         <td class="px-4 py-3">${escapeHtml(b.stok)}</td>
-        <td class="px-4 py-3"><span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs">${escapeHtml(b.kondisi)}</span></td>
+        <td class="px-4 py-3"><span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs">${escapeHtml(labelKondisi(b.kondisi))}</span></td>
         <td class="px-4 py-3 text-right space-x-2">
           <button onclick="detailBarang(${b.id})" class="rounded border border-slate-300 px-2.5 py-1 text-xs hover:bg-slate-100">Detail</button>
           ${
@@ -106,7 +106,7 @@ async function loadBarang() {
       .join("");
   } catch (err) {
     showAlert("alert-box", err.message, "error");
-    tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-rose-600">Gagal memuat data barang.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-rose-600">Gagal memuat data barang.</td></tr>`;
   }
 }
 
@@ -130,6 +130,8 @@ async function handleSaveBarang(e) {
       body: JSON.stringify(payload),
     });
     showAlert("alert-box", res.pesan, "success");
+    // Kotak detail bisa berisi data lama setelah perubahan; sembunyikan agar tidak menyesatkan.
+    document.getElementById("detail-box")?.classList.add("hidden");
     resetBarangForm();
     loadBarang();
   } catch (err) {
@@ -149,7 +151,7 @@ async function detailBarang(id) {
       <strong>[${escapeHtml(b.kode_barang)}] ${escapeHtml(b.nama)}</strong> —
       Kategori: ${escapeHtml(b.kategori?.nama || "-")},
       Stok: ${escapeHtml(b.stok)},
-      Kondisi: ${escapeHtml(b.kondisi)}
+      Kondisi: ${escapeHtml(labelKondisi(b.kondisi))}
     `;
   } catch (err) {
     showAlert("alert-box", err.message, "error");
@@ -157,6 +159,10 @@ async function detailBarang(id) {
 }
 
 async function editBarang(id) {
+  if (!isAdmin()) {
+    showAlert("alert-box", "Akses ditolak: hanya admin yang dapat mengubah barang", "error");
+    return;
+  }
   hideAlert("alert-box");
   try {
     const res = await apiRequest(`/barang/${id}`);
@@ -175,6 +181,10 @@ async function editBarang(id) {
 }
 
 async function deleteBarang(id) {
+  if (!isAdmin()) {
+    showAlert("alert-box", "Akses ditolak: hanya admin yang dapat menghapus barang", "error");
+    return;
+  }
   if (!confirm("Yakin ingin menghapus barang ini?")) return;
   hideAlert("alert-box");
   try {

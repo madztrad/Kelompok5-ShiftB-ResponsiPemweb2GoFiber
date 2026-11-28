@@ -12,6 +12,7 @@ import (
 const (
 	minJWTSecretLength = 32
 	legacyDevSecret    = "dev_only_secret_ganti_di_env"
+	exampleJWTSecret   = "ganti_dengan_secret_acak_minimal_32_karakter"
 )
 
 type EnvConfig struct {
@@ -55,8 +56,8 @@ func LoadEnv() EnvConfig {
 	}
 
 	jwtSecret := os.Getenv("JWT_SECRET")
-	if len(jwtSecret) < minJWTSecretLength || jwtSecret == legacyDevSecret {
-		log.Fatalf("JWT_SECRET wajib diisi dengan string acak minimal %d karakter (jangan memakai nilai bawaan)", minJWTSecretLength)
+	if len(jwtSecret) < minJWTSecretLength || jwtSecret == legacyDevSecret || jwtSecret == exampleJWTSecret {
+		log.Fatalf("JWT_SECRET wajib diisi string acak minimal %d karakter (nilai contoh/bawaan ditolak). Buat dengan `openssl rand -base64 48` lalu simpan di .env", minJWTSecretLength)
 	}
 
 	return EnvConfig{

@@ -37,10 +37,16 @@ Aplikasi web full-stack untuk manajemen inventaris dan peminjaman barang laborat
 ```bash
 cd backend
 cp .env.example .env
-# Edit .env sesuai konfigurasi MySQL lokal & JWT_SECRET Anda
+
+# Wajib: buat JWT_SECRET acak (minimal 32 karakter) lalu tempel hasilnya ke .env
+openssl rand -base64 48
+
+# Sesuaikan DB_HOST / DB_PORT / DB_USER / DB_PASS / DB_NAME dengan MySQL lokal
 go run ./cmd/api
 ```
-Server akan berjalan di `http://localhost:3000` (cek kesehatan API di `GET http://localhost:3000/api/status`).
+Server berjalan di `http://localhost:3000`. Bila `JWT_SECRET` kosong, kurang dari 32 karakter, atau masih memakai nilai contoh dari `.env.example`, server sengaja berhenti dengan pesan yang jelas.
+Saat pertama kali terhubung, aplikasi menjalankan `AutoMigrate` dan membuat akun demo pada tabel `users` bila belum ada.
+Cek kesehatan API di `GET http://localhost:3000/api/status`.
 Versi Go yang digunakan harus memenuhi versi pada `backend/go.mod`.
 
 ### 2. Frontend
@@ -50,6 +56,14 @@ cd frontend
 python3 -m http.server 5500
 ```
 Buka `http://localhost:5500/login.html`.
+
+### 3. Menjalankan Pengujian Otomatis
+```bash
+cd backend
+go test ./...   # unit test + HTTP handler test, tidak memerlukan MySQL
+go vet ./...
+```
+Test mencakup: penolakan `401` tanpa token, `403` untuk `member` pada route admin, `400` untuk body/ID tidak valid, `422` beserta detail per field, validasi aturan edit peminjaman, serta pengecekan pesan validasi memakai nama field JSON.
 
 ---
 
@@ -117,3 +131,4 @@ Member hanya dapat melihat dan mengubah catatan peminjaman milik sendiri. Member
 
 ## Video Presentasi YouTube
 - **Tautan Video:** *(isi link YouTube Public/Unlisted sebelum pengumpulan)*
+- **Panduan & pembagian penjelasan per anggota:** [`PANDUAN_VIDEO.md`](PANDUAN_VIDEO.md) — berisi susunan waktu, urutan file yang ditunjukkan, kalimat inti tiap bagian, dan checklist sebelum merekam.

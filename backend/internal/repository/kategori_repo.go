@@ -15,7 +15,7 @@ func NewKategoriRepository(db *gorm.DB) *KategoriRepository {
 }
 
 func (r *KategoriRepository) FindAll() ([]model.Kategori, error) {
-	var list []model.Kategori
+	list := make([]model.Kategori, 0)
 	if err := r.db.Order("id DESC").Find(&list).Error; err != nil {
 		return nil, err
 	}

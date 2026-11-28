@@ -70,6 +70,8 @@ async function handleSaveKategori(e) {
       body: JSON.stringify(payload),
     });
     showAlert("alert-box", res.pesan, "success");
+    // Kotak detail bisa berisi data lama setelah perubahan; sembunyikan agar tidak menyesatkan.
+    document.getElementById("detail-box")?.classList.add("hidden");
     resetKategoriForm();
     loadKategori();
   } catch (err) {

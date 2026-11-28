@@ -44,7 +44,7 @@ func (r *BarangRepository) FindAll(filter BarangFilter) ([]model.Barang, int64, 
 	}
 
 	offset := (filter.Page - 1) * filter.Limit
-	var items []model.Barang
+	items := make([]model.Barang, 0)
 	if err := query.Preload("Kategori").Order("id DESC").Limit(filter.Limit).Offset(offset).Find(&items).Error; err != nil {
 		return nil, 0, err
 	}

@@ -31,7 +31,7 @@ function renderNavbar(activePage) {
         <div class="flex items-center gap-3">
           ${
             user
-              ? `<span class="text-xs font-semibold uppercase tracking-wide rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">${escapeHtml(user.nama)} (${escapeHtml(user.role)})</span>`
+              ? `<span class="whitespace-nowrap text-xs font-semibold uppercase tracking-wide rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">${escapeHtml(user.nama)} (${escapeHtml(user.role)})</span>`
               : ""
           }
           <button id="btn-logout" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100">

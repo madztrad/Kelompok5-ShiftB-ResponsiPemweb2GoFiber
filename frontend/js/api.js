@@ -28,9 +28,50 @@ function requireAuth() {
 function logoutLocal() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
-  if (typeof window !== "undefined" && typeof window.location !== "undefined" && window.location.pathname !== "/login.html") {
+  // Hindari redirect berulang saat sudah berada di halaman login.
+  if (!/login\.html$/.test(window.location.pathname)) {
     window.location.href = "login.html";
   }
+}
+
+// Tanggal ISO (YYYY-MM-DD) dari zona waktu perangkat, bukan UTC.
+// toISOString() memakai UTC sehingga di WIB sebelum 07:00 menghasilkan tanggal kemarin.
+function todayISO() {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+const BULAN_SINGKAT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+
+// "2026-11-28" -> "28 Nov 2026"
+function formatTanggal(value) {
+  if (!value) return "-";
+  const parts = String(value).split("-");
+  if (parts.length !== 3) return String(value);
+  const bulan = BULAN_SINGKAT[Number(parts[1]) - 1];
+  if (!bulan || Number.isNaN(Number(parts[2]))) return String(value);
+  return `${Number(parts[2])} ${bulan} ${parts[0]}`;
+}
+
+const LABEL_KONDISI = {
+  baik: "Baik",
+  rusak_ringan: "Rusak Ringan",
+  rusak_berat: "Rusak Berat",
+};
+
+const LABEL_STATUS = {
+  dipinjam: "Dipinjam",
+  dikembalikan: "Dikembalikan",
+  ditolak: "Ditolak",
+};
+
+function labelKondisi(value) {
+  return LABEL_KONDISI[value] || value || "-";
+}
+
+function labelStatus(value) {
+  return LABEL_STATUS[value] || value || "-";
 }
 
 function escapeHtml(value) {

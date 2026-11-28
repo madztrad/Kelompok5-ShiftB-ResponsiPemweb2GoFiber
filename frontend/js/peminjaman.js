@@ -3,14 +3,10 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!requireAuth()) return;
   renderNavbar("peminjaman");
 
-  if (isAdmin()) {
-    document.getElementById("status-group")?.classList.remove("hidden");
-  }
-
-  // Default tanggal pinjam hari ini
+  // Default tanggal pinjam hari ini (zona waktu perangkat)
   const tglInput = document.getElementById("tanggal_pinjam");
   if (tglInput && !tglInput.value) {
-    tglInput.value = new Date().toISOString().slice(0, 10);
+    tglInput.value = todayISO();
   }
 
   setPeminjamanEditMode(false);
@@ -60,8 +56,8 @@ async function loadPeminjaman() {
         <td class="px-4 py-3">${escapeHtml(p.user?.nama || "-")}</td>
         <td class="px-4 py-3 font-semibold">${escapeHtml(p.barang?.nama || "-")}</td>
         <td class="px-4 py-3">${escapeHtml(p.jumlah)}</td>
-        <td class="px-4 py-3 text-xs">${escapeHtml(p.tanggal_pinjam)} ${p.tanggal_kembali ? `s/d ${escapeHtml(p.tanggal_kembali)}` : ""}</td>
-        <td class="px-4 py-3"><span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium">${escapeHtml(p.status)}</span></td>
+        <td class="px-4 py-3 text-xs">${escapeHtml(formatTanggal(p.tanggal_pinjam))} ${p.tanggal_kembali ? `s/d ${escapeHtml(formatTanggal(p.tanggal_kembali))}` : ""}</td>
+        <td class="px-4 py-3"><span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium">${escapeHtml(labelStatus(p.status))}</span></td>
         <td class="px-4 py-3 text-right space-x-2">
           <button onclick="detailPeminjaman(${p.id})" class="rounded border border-slate-300 px-2.5 py-1 text-xs hover:bg-slate-100">Detail</button>
           <button onclick="editPeminjaman(${p.id})" class="rounded border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs text-amber-800 hover:bg-amber-100">Edit</button>
@@ -116,6 +112,8 @@ async function handleSavePeminjaman(e) {
       body: JSON.stringify(payload),
     });
     showAlert("alert-box", res.pesan, "success");
+    // Kotak detail bisa berisi data lama setelah perubahan; sembunyikan agar tidak menyesatkan.
+    document.getElementById("detail-box")?.classList.add("hidden");
     resetPeminjamanForm();
     loadBarangOptions();
     loadPeminjaman();
@@ -136,7 +134,8 @@ async function detailPeminjaman(id) {
       <strong>Peminjaman #${escapeHtml(p.id)}</strong> —
       Peminjam: ${escapeHtml(p.user?.nama || "-")},
       Barang: ${escapeHtml(p.barang?.nama || "-")} (${escapeHtml(p.jumlah)} unit),
-      Status: <strong>${escapeHtml(p.status)}</strong>,
+      Tanggal: ${escapeHtml(formatTanggal(p.tanggal_pinjam))}${p.tanggal_kembali ? ` s/d ${escapeHtml(formatTanggal(p.tanggal_kembali))}` : ""},
+      Status: <strong>${escapeHtml(labelStatus(p.status))}</strong>,
       Catatan: ${escapeHtml(p.catatan || "-")}
     `;
   } catch (err) {
@@ -184,8 +183,13 @@ function resetPeminjamanForm() {
   document.getElementById("peminjaman-id").value = "";
   setPeminjamanEditMode(false);
   document.getElementById("peminjaman-form").reset();
-  document.getElementById("tanggal_pinjam").value = new Date().toISOString().slice(0, 10);
+  document.getElementById("tanggal_pinjam").value = todayISO();
   document.getElementById("form-title").textContent = "Ajukan Peminjaman";
+}
+
+// Grup status hanya ditampilkan untuk admin saat mengedit peminjaman yang sudah ada.
+function setPeminjamanStatusVisibility(visible) {
+  document.getElementById("status-group")?.classList.toggle("hidden", !visible);
 }
 
 function setPeminjamanEditMode(isEditing) {
@@ -195,4 +199,5 @@ function setPeminjamanEditMode(isEditing) {
   document.getElementById("tanggal_pinjam").disabled = memberEdit;
   document.getElementById("tanggal_kembali").disabled = memberEdit;
   document.getElementById("member-edit-note")?.classList.toggle("hidden", !memberEdit);
+  setPeminjamanStatusVisibility(isEditing && isAdmin());
 }

@@ -23,7 +23,7 @@ func (r *PeminjamanRepository) FindAll(userID uint, isAdmin bool) ([]model.Pemin
 	if !isAdmin {
 		query = query.Where("user_id = ?", userID)
 	}
-	var list []model.Peminjaman
+	list := make([]model.Peminjaman, 0)
 	if err := query.Find(&list).Error; err != nil {
 		return nil, err
 	}
